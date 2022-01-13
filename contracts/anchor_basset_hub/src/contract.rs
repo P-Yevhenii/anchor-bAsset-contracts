@@ -1,10 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, Binary, CosmosMsg, Decimal, Deps, DepsMut, DistributionMsg,
-    Env, MessageInfo, QueryRequest, Response, StakingMsg, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg, WasmQuery,
-};
+use cosmwasm_std::{attr, from_binary, to_binary, Addr, Binary, CosmosMsg, Decimal, Deps, DepsMut, DistributionMsg, Env, MessageInfo, QueryRequest, Response, StakingMsg, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery, BankMsg, Coin};
 
 use crate::config::{
     execute_deregister_validator, execute_register_validator, execute_update_config,
@@ -26,6 +22,7 @@ use basset::hub::{
 };
 use basset::reward::ExecuteMsg::{SwapToRewardDenom, UpdateGlobalIndex};
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Cw20ReceiveMsg, TokenInfoResponse};
+use basset::deduct_tax;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -97,9 +94,20 @@ pub fn instantiate(
     })));
 
     // send the delegate message
-    messages.push(SubMsg::new(CosmosMsg::Staking(StakingMsg::Delegate {
-        validator: msg.validator.to_string(),
-        amount: payment.clone(),
+    // messages.push(SubMsg::new(CosmosMsg::Staking(StakingMsg::Delegate {
+    //     validator: msg.validator.to_string(),
+    //     amount: payment.clone(),
+    // })));
+
+    messages.push( SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
+        to_address: msg.validator.to_string(),
+        amount: vec![deduct_tax(
+            &deps.querier,
+            Coin {
+                denom: payment.clone().denom,
+                amount: payment.amount,
+            },
+        )?],
     })));
 
     Ok(Response::new()

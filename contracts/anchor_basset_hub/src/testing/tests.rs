@@ -187,11 +187,18 @@ fn proper_initialization() {
 
     assert_eq!(&res.messages[0], &reg_validator_msg);
 
-    let delegate_msg = SubMsg::new(CosmosMsg::Staking(StakingMsg::Delegate {
-        validator: validator.address,
-        amount: coin(1000000, "uluna"),
-    }));
+    // let delegate_msg = SubMsg::new(CosmosMsg::Staking(StakingMsg::Delegate {
+    //     validator: validator.address,
+    //     amount: coin(1000000, "uluna"),
+    // }));
 
+    let delegate_msg = SubMsg::new(CosmosMsg::Bank(BankMsg::Send {
+        to_address: validator.address.to_string(),
+        amount: vec![Coin {
+            denom: "uluna".to_string(),
+            amount: Uint128::new(1000000),
+        }],
+    }));
     assert_eq!(&res.messages[1], &delegate_msg);
 
     // check parameters storage
